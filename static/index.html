@@ -1,0 +1,1417 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CV Assistant</title>
+  <style>
+    :root {
+      --bg: #111111;
+      --side: #1d1d1d;
+      --panel: #292929;
+      --panel-2: #353535;
+      --line: #3f514c;
+      --text: #f2f2f2;
+      --muted: #a7b0ad;
+      --faint: #707a77;
+      --accent: #19aa89;
+      --accent-soft: #55e0bb;
+      --danger: #ff7c7c;
+      --shadow: 0 18px 42px rgba(0, 0, 0, .45);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      letter-spacing: 0;
+      overflow: hidden;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      background:
+        radial-gradient(circle at 90% 100%, rgba(122, 135, 255, .42) 0 11%, transparent 12%),
+        linear-gradient(180deg, #111 0%, #101010 72%, #050505 100%);
+    }
+
+    .workspace {
+      position: relative;
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .topbar {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      color: #d4dad8;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: #cbd5d1;
+      border-radius: 10px;
+    }
+
+    .icon-button:hover {
+      background: #222;
+      color: #fff;
+    }
+
+    .chat-area {
+      overflow-y: auto;
+      padding: 8px clamp(18px, 7vw, 118px) 28px;
+      scrollbar-color: #333 transparent;
+    }
+
+    .day-chip {
+      width: max-content;
+      margin: 18px auto 42px;
+      padding: 8px 17px;
+      border-radius: 999px;
+      background: #242424;
+      color: #c2c8c6;
+      font-size: 13px;
+    }
+
+    .empty-state {
+      min-height: 58vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: #dce3e0;
+    }
+
+    .empty-state-inner {
+      width: min(720px, 100%);
+      display: grid;
+      gap: 20px;
+    }
+
+    .empty-state h2 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 54px);
+      letter-spacing: 0;
+    }
+
+    .empty-state p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 17px;
+    }
+
+    .message-row {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 18px;
+      margin: 24px 0;
+      direction: ltr;
+    }
+
+    .message-row.user {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+      direction: rtl;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent);
+      align-self: start;
+      margin-top: 4px;
+    }
+
+    .bubble {
+      direction: rtl;
+      max-width: 860px;
+      line-height: 1.9;
+      color: var(--text);
+      white-space: pre-wrap;
+      font-size: 17px;
+    }
+
+    .message-row.user .bubble {
+      max-width: min(760px, 86%);
+      background: var(--panel-2);
+      border-radius: 18px 18px 4px 18px;
+      padding: 16px 22px;
+      color: #f4f4f4;
+      line-height: 1.6;
+      font-weight: 600;
+    }
+
+    .message-tools {
+      display: flex;
+      gap: 16px;
+      color: var(--muted);
+      margin-top: 12px;
+      justify-content: center;
+    }
+
+    .bubble h1, .bubble h2, .bubble h3 {
+      margin: 12px 0 8px;
+      color: var(--accent-soft);
+      line-height: 1.4;
+    }
+
+    .bubble h1 { font-size: 24px; }
+    .bubble h2 { font-size: 21px; }
+    .bubble h3 { font-size: 18px; }
+
+    .bubble ul, .bubble ol {
+      margin: 8px 0;
+      padding-inline-start: 26px;
+    }
+
+    .bubble li {
+      margin: 6px 0;
+    }
+
+    .bubble code {
+      background: #1b1b1b;
+      border: 1px solid #3b4c48;
+      border-radius: 5px;
+      padding: 2px 6px;
+      direction: ltr;
+      display: inline-block;
+    }
+
+    .bubble pre {
+      background: #0c0f0e;
+      border: 1px solid #34413e;
+      border-radius: 10px;
+      padding: 14px;
+      overflow-x: auto;
+      direction: ltr;
+      text-align: left;
+      white-space: pre;
+    }
+
+    .bubble table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      white-space: normal;
+    }
+
+    .bubble th, .bubble td {
+      border: 1px solid #34413e;
+      padding: 8px;
+    }
+
+    .quick-cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      margin: 18px 0 8px;
+      max-width: 940px;
+    }
+
+    .quick-card {
+      min-height: 126px;
+      border: 1px solid var(--line);
+      background: rgba(28, 31, 30, .9);
+      border-radius: 14px;
+      color: var(--text);
+      padding: 22px;
+      text-align: right;
+      display: grid;
+      gap: 12px;
+      align-content: center;
+    }
+
+    .quick-card:hover {
+      border-color: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    .quick-card-title {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .quick-card-title i {
+      color: var(--accent-soft);
+    }
+
+    .quick-card p {
+      margin: 0;
+      color: #d6ddda;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .result-block {
+      display: grid;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .metric-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 920px;
+    }
+
+    .metric {
+      border: 1px solid #34413e;
+      border-radius: 12px;
+      padding: 14px;
+      background: #1c1f1e;
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--accent-soft);
+      font-size: 26px;
+      margin-bottom: 4px;
+    }
+
+    .list-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 980px;
+      margin-top: 8px;
+    }
+
+    .data-card {
+      border: 1px solid #34413e;
+      border-radius: 12px;
+      background: #1c1f1e;
+      padding: 16px;
+      line-height: 1.7;
+    }
+
+    .data-card h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .data-card a {
+      color: var(--accent-soft);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .pill {
+      display: inline-flex;
+      margin: 4px 0 4px 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(85, 224, 187, .14);
+      color: var(--accent-soft);
+      font-size: 13px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .error {
+      color: var(--danger);
+      font-weight: 800;
+    }
+
+    .composer-wrap {
+      padding: 0 clamp(18px, 7vw, 118px) 28px;
+      background: linear-gradient(180deg, rgba(17,17,17,0), #0b0b0b 28%);
+    }
+
+    .composer {
+      min-height: 144px;
+      border: 1px solid var(--line);
+      background: #282828;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .send-button {
+      height: 44px;
+      min-width: 104px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      color: #06231b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 800;
+    }
+
+    .send-button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    .input-tools {
+      display: flex;
+      gap: 16px;
+      color: #c2cbc8;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: 8px;
+      position: relative;
+    }
+
+    .tool-btn {
+      background: transparent;
+      color: inherit;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tool-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+
+    .options-menu {
+      position: absolute;
+      left: 0;
+      bottom: 48px;
+      width: 260px;
+      display: none;
+      background: #343434;
+      border: 1px solid #464646;
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      z-index: 15;
+    }
+
+    .options-menu.open {
+      display: grid;
+      gap: 4px;
+    }
+
+    .option-item {
+      min-height: 42px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-start;
+      text-align: right;
+    }
+
+    .option-item:hover {
+      background: #424242;
+    }
+
+    .attachment-preview {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid #3b4c48;
+      border-radius: 10px;
+      color: #dce3e0;
+      background: #202322;
+      margin-top: 8px;
+      width: max-content;
+      max-width: 100%;
+    }
+
+    .attachment-preview.show {
+      display: inline-flex;
+    }
+
+    .attachment-preview button {
+      background: transparent;
+      color: var(--danger);
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    textarea {
+      min-height: 86px;
+      max-height: 190px;
+      resize: vertical;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      width: 100%;
+      font-size: 17px;
+      line-height: 1.7;
+      padding: 12px 4px;
+      text-align: right;
+    }
+
+    textarea::placeholder {
+      color: #d8dddb;
+    }
+
+    .disclaimer {
+      text-align: center;
+      color: #707977;
+      font-size: 13px;
+      margin-top: 14px;
+    }
+
+    .sidebar {
+      height: 100vh;
+      background: var(--side);
+      border-right: 1px solid #263633;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      padding: 30px 10px 22px;
+      overflow: hidden;
+    }
+
+    .brand {
+      text-align: right;
+      padding: 0 18px 24px;
+    }
+
+    .brand h1 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--accent-soft);
+      font-size: 19px;
+    }
+
+    .new-chat {
+      margin: 4px 10px 30px;
+      height: 60px;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #06231b;
+      font-size: 17px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .nav-list {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      overflow-y: auto;
+      padding: 0 0 12px;
+    }
+
+    .sidebar-label {
+      color: #78837f;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 18px 4px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .nav-item {
+      height: 60px;
+      padding: 0 18px;
+      background: transparent;
+      color: #d8dddb;
+      border-radius: 0;
+      border-right: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-align: right;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: #343434;
+      border-right-color: var(--accent-soft);
+    }
+
+    .nav-item span {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .chat-history-list {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .chat-row {
+      display: grid;
+      grid-template-columns: 1fr 42px;
+      align-items: stretch;
+      background: transparent;
+    }
+
+    .chat-row.active {
+      background: #343434;
+      border-right: 3px solid var(--accent-soft);
+    }
+
+    .chat-row .nav-item {
+      height: auto;
+      min-height: 60px;
+      border-right: 0;
+      justify-content: flex-start;
+      background: transparent;
+    }
+
+    .chat-delete {
+      background: transparent;
+      color: #bfc8c5;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin: 8px 4px;
+    }
+
+    .chat-delete:hover {
+      background: #4a2727;
+      color: #ffd2d2;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid #31403d;
+      padding: 20px 24px 6px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 14px;
+      color: #c0c8c5;
+      font-weight: 700;
+    }
+
+    .status {
+      position: fixed;
+      left: 24px;
+      bottom: 24px;
+      max-width: min(460px, calc(100vw - 48px));
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: #242424;
+      color: #dce3e0;
+      border: 1px solid #3b4c48;
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 20;
+      direction: rtl;
+    }
+
+    .status.error {
+      color: #ffd2d2;
+      border-color: #7d3434;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      display: none;
+      place-items: center;
+      z-index: 30;
+      padding: 18px;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .settings-modal {
+      width: min(560px, 100%);
+      background: #242424;
+      border: 1px solid #3b4c48;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .settings-modal header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-modal h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 12px;
+      color: #dce3e0;
+      line-height: 1.7;
+    }
+
+    .settings-grid code {
+      direction: ltr;
+      display: inline-block;
+      color: var(--accent-soft);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .app-shell {
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+      .workspace {
+        height: auto;
+        min-height: 100vh;
+      }
+      .sidebar {
+        grid-row: 1;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid #263633;
+        padding: 22px 10px 12px;
+      }
+      .brand {
+        text-align: center;
+      }
+      .nav-list {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+      .nav-item {
+        min-width: 190px;
+        border-right: 0;
+        border-bottom: 3px solid transparent;
+      }
+      .nav-item:hover,
+      .nav-item.active {
+        border-right-color: transparent;
+        border-bottom-color: var(--accent-soft);
+      }
+      .sidebar-footer {
+        display: none;
+      }
+      .topbar {
+        height: 56px;
+      }
+      .quick-cards,
+      .list-grid,
+      .metric-strip {
+        grid-template-columns: 1fr;
+      }
+      .composer {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .send-button {
+        width: 100%;
+      }
+      .input-tools {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <main class="workspace">
+      <header class="topbar" aria-label="Top tools">
+        <button class="icon-button" title="الحساب" type="button"><i data-lucide="circle-user-round"></i></button>
+        <button id="settingsBtn" class="icon-button" title="الإعدادات" type="button"><i data-lucide="settings"></i></button>
+      </header>
+
+      <section id="chatArea" class="chat-area" aria-live="polite">
+        <div class="day-chip">اليوم</div>
+      </section>
+
+      <section class="composer-wrap">
+        <form id="chatForm" class="composer">
+          <button id="sendBtn" class="send-button" type="submit">
+            <i data-lucide="send-horizontal"></i>
+            <span>إرسال</span>
+          </button>
+
+          <textarea id="chatInput" placeholder="اسألني أي شيء..." rows="2"></textarea>
+
+          <div class="input-tools" aria-label="Input tools">
+            <button id="optionsBtn" class="tool-btn" type="button" title="خيارات"><i data-lucide="plus"></i></button>
+            <button id="attachBtn" class="tool-btn" type="button" title="إرفاق ملف"><i data-lucide="paperclip"></i></button>
+            <button class="tool-btn" type="button" title="الوضع الحالي"><i data-lucide="audio-lines"></i></button>
+            <div id="optionsMenu" class="options-menu">
+              <button class="option-item" type="button" data-prompt="حلل السيرة الذاتية المرفقة وقيّمها بنظام ATS ثم اقترح تحسينات عملية."><i data-lucide="file-text"></i><span>تحليل CV</span></button>
+              <button class="option-item" type="button" data-prompt="حضّر لي أسئلة مقابلة شخصية مناسبة بناءً على سيرتي الذاتية ومجالي."><i data-lucide="users-round"></i><span>أسئلة مقابلة</span></button>
+              <button class="option-item" type="button" data-prompt="رشح لي أفضل الوظائف المناسبة من الداتا المحلية واشرح سبب الترشيح."><i data-lucide="briefcase-business"></i><span>ترشيح وظائف</span></button>
+              <button class="option-item" type="button" data-prompt="اقترح تحسينات واضحة للصياغة والتنظيم والكلمات المفتاحية في سيرتي الذاتية."><i data-lucide="sparkles"></i><span>تحسين الصياغة</span></button>
+            </div>
+          </div>
+        </form>
+        <div id="attachmentPreview" class="attachment-preview"></div>
+        <div class="disclaimer">قد يخطئ CV Assistant أحياناً، تحقق من المعلومات الهامة.</div>
+      </section>
+    </main>
+
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>CV Assistant</h1>
+        <p id="userLabel">AI Career Partner</p>
+      </div>
+
+      <button id="newChatBtn" class="new-chat" type="button">
+        <span>New Chat</span>
+        <i data-lucide="plus"></i>
+      </button>
+
+      <nav class="nav-list" aria-label="Assistant actions">
+        <div class="sidebar-label">Chats</div>
+        <div id="chatList" class="chat-history-list"></div>
+      </nav>
+
+      <footer class="sidebar-footer">
+        <button class="footer-row" type="button" data-open-settings><i data-lucide="settings"></i><span>Settings</span></button>
+        <div class="footer-row"><i data-lucide="circle-help"></i><span>Help</span></div>
+      </footer>
+    </aside>
+  </div>
+
+  <input id="cvFile" class="hidden" type="file" accept=".pdf,.docx,.txt" />
+  <div id="status" class="status"></div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <header>
+        <h2 id="settingsTitle">Settings</h2>
+        <button id="closeSettingsBtn" class="icon-button" type="button"><i data-lucide="x"></i></button>
+      </header>
+      <div class="settings-grid">
+        <div><strong>User ID:</strong> <code id="settingsUserId">-</code></div>
+        <div><strong>Current Chat:</strong> <code id="settingsChatId">-</code></div>
+        <div><strong>Backend:</strong> <code id="settingsBackend">-</code></div>
+        <div><strong>Streaming:</strong> SSE over <code>POST /api/v1/chat/stream</code></div>
+        <div class="muted">الحسابات والمحادثات محفوظة محلياً داخل backend في <code>storage/sessions</code>.</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    let userId = null;
+    let sessionId = null;
+    let lastAnalysis = null;
+    let selectedFile = null;
+
+    const $ = (id) => document.getElementById(id);
+    const chatArea = $("chatArea");
+    const statusBox = $("status");
+    const chatList = $("chatList");
+    const userLabel = $("userLabel");
+    const optionsMenu = $("optionsMenu");
+    const attachmentPreview = $("attachmentPreview");
+    const settingsModal = $("settingsModal");
+    const API_BASE = (
+      location.protocol === "file:" ||
+      (location.hostname && location.port && location.port !== "8000")
+    ) ? "http://127.0.0.1:8000" : "";
+
+    function createIcons() {
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function showStatus(message, isError = false) {
+      statusBox.textContent = message;
+      statusBox.className = isError ? "status error" : "status";
+      statusBox.style.display = "block";
+      clearTimeout(showStatus.timer);
+      showStatus.timer = setTimeout(() => {
+        statusBox.style.display = "none";
+      }, isError ? 7000 : 4200);
+    }
+
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function clearChatArea() {
+      chatArea.innerHTML = `<div class="day-chip">اليوم</div>`;
+    }
+
+    function renderEmptyState() {
+      clearChatArea();
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.innerHTML = `
+        <div class="empty-state-inner">
+          <h2>ابدأ محادثة حقيقية</h2>
+          <p>كل مستخدم له ID محفوظ محلياً، وكل محادثة ورسائلها يتم حفظها في backend داخل المشروع. ارفع سيرتك الذاتية أو اسأل سؤالاً لبدء العمل.</p>
+          <div class="quick-cards">
+            <button class="quick-card" type="button" data-action="upload">
+              <div class="quick-card-title"><i data-lucide="file-text"></i><span>رفع وتحليل CV</span></div>
+              <p>ارفع PDF أو Word وسيتم حفظ التحليل داخل المحادثة الحالية.</p>
+            </button>
+            <button class="quick-card" type="button" data-action="interview">
+              <div class="quick-card-title"><i data-lucide="users-round"></i><span>أسئلة مقابلة</span></div>
+              <p>بعد رفع CV، اطلب أسئلة مقابلة مرتبطة بخبراتك ومجالك.</p>
+            </button>
+          </div>
+        </div>`;
+      chatArea.appendChild(empty);
+      createIcons();
+    }
+
+    function addMessage(role, html) {
+      const empty = chatArea.querySelector(".empty-state");
+      if (empty) empty.remove();
+      const row = document.createElement("div");
+      row.className = `message-row ${role}`;
+      if (role === "assistant") {
+        row.innerHTML = `
+          <div class="avatar" aria-hidden="true"></div>
+          <div>
+            <div class="bubble">${html}</div>
+            <div class="message-tools" aria-hidden="true">
+              <i data-lucide="rotate-ccw"></i>
+              <i data-lucide="thumbs-down"></i>
+              <i data-lucide="thumbs-up"></i>
+            </div>
+          </div>`;
+      } else {
+        row.innerHTML = `<div class="bubble">${escapeHtml(html)}</div>`;
+      }
+      chatArea.appendChild(row);
+      createIcons();
+      scrollToBottom();
+      return row;
+    }
+
+    function addLoadingMessage(text = "جاري المعالجة...") {
+      const row = addMessage("assistant", `<span class="muted">${text}</span>`);
+      return row;
+    }
+
+    function updateAssistantMessage(row, html) {
+      row.querySelector(".bubble").innerHTML = html;
+      createIcons();
+      scrollToBottom();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderMarkdown(markdown) {
+      const blocks = String(markdown || "").split(/```/);
+      let html = "";
+      blocks.forEach((block, index) => {
+        if (index % 2 === 1) {
+          html += `<pre><code>${escapeHtml(block)}</code></pre>`;
+          return;
+        }
+        let text = escapeHtml(block);
+        text = text.replace(/^### (.*)$/gm, "<h3>$1</h3>");
+        text = text.replace(/^## (.*)$/gm, "<h2>$1</h2>");
+        text = text.replace(/^# (.*)$/gm, "<h1>$1</h1>");
+        text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+        text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+        text = text.replace(/^\s*[-*]\s+(.+)$/gm, "<li>$1</li>");
+        text = text.replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>");
+        text = text.replace(/\n{2,}/g, "<br><br>");
+        text = text.replace(/\n/g, "<br>");
+        html += text;
+      });
+      return html;
+    }
+
+    function updateAttachmentPreview() {
+      if (!selectedFile) {
+        attachmentPreview.classList.remove("show");
+        attachmentPreview.innerHTML = "";
+        return;
+      }
+      attachmentPreview.classList.add("show");
+      attachmentPreview.innerHTML = `
+        <i data-lucide="paperclip"></i>
+        <span>${escapeHtml(selectedFile.name)}</span>
+        <button type="button" id="clearAttachmentBtn" title="إزالة الملف"><i data-lucide="x"></i></button>
+      `;
+      createIcons();
+      $("clearAttachmentBtn").addEventListener("click", () => {
+        selectedFile = null;
+        $("cvFile").value = "";
+        updateAttachmentPreview();
+      });
+    }
+
+    function openSettings() {
+      $("settingsUserId").textContent = userId || "-";
+      $("settingsChatId").textContent = sessionId || "-";
+      $("settingsBackend").textContent = API_BASE || location.origin;
+      settingsModal.classList.add("open");
+      createIcons();
+    }
+
+    function closeSettings() {
+      settingsModal.classList.remove("open");
+    }
+
+    function listItems(items) {
+      if (!items || !items.length) return "<span class='muted'>غير متوفر</span>";
+      return `<ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+    }
+
+    function pills(items) {
+      if (!items || !items.length) return "<span class='muted'>غير متوفر</span>";
+      return items.map(item => `<span class="pill">${escapeHtml(item)}</span>`).join("");
+    }
+
+    function renderSavedAnalysis(chat) {
+      if (!chat || !chat.ats) return;
+      lastAnalysis = {
+        session_id: chat.session_id,
+        summary: chat.summary,
+        ats: chat.ats,
+        improvement_suggestions: chat.improvement_suggestions || []
+      };
+    }
+
+    function renderAnalysis(data) {
+      lastAnalysis = data;
+      sessionId = data.session_id;
+      const summary = data.summary || {};
+      const ats = data.ats || {};
+      const jobs = ats.top_jobs || [];
+
+      const jobsHtml = jobs.slice(0, 4).map(job => `
+        <article class="data-card">
+          <h3>${escapeHtml(job.title || "وظيفة")}</h3>
+          <div>${escapeHtml(job.company || "شركة غير محددة")} · ${escapeHtml(job.location || "موقع غير محدد")}</div>
+          <div class="muted">نسبة التوافق: ${Number(job.match_score || 0).toFixed(2)}</div>
+          ${job.link ? `<a href="${escapeHtml(job.link)}" target="_blank" rel="noreferrer">فتح رابط التقديم</a>` : `<span class="muted">لا يوجد رابط تقديم</span>`}
+        </article>
+      `).join("");
+
+      return `
+        <div class="result-block">
+          <div>تم تحليل سيرتك الذاتية بنجاح. هذه أهم النتائج:</div>
+          <div class="metric-strip">
+            <div class="metric"><strong>${Number(ats.score || 0).toFixed(2)}</strong><span>ATS Score</span></div>
+            <div class="metric"><strong>${escapeHtml(ats.label || "-")}</strong><span>التقييم العام</span></div>
+            <div class="metric"><strong>${escapeHtml((summary.likely_roles || ["-"])[0])}</strong><span>أقرب مسار</span></div>
+          </div>
+          <div>${escapeHtml(ats.explanation || "")}</div>
+          <div><strong>المهارات المتطابقة:</strong><br>${pills(ats.matched_skills)}</div>
+          <div><strong>المهارات الناقصة:</strong><br>${pills(ats.missing_skills)}</div>
+          <div><strong>اقتراحات التحسين:</strong>${listItems(data.improvement_suggestions)}</div>
+          <div><strong>أفضل الوظائف المناسبة:</strong></div>
+          <div class="list-grid">${jobsHtml || "<div class='data-card'>لا توجد وظائف مناسبة حالياً.</div>"}</div>
+        </div>`;
+    }
+
+    async function requestJson(url, options = {}) {
+      let response;
+      try {
+        response = await fetch(`${API_BASE}${url}`, options);
+      } catch (error) {
+        throw new Error(
+          "لا يمكن الوصول إلى السيرفر. تأكد أن FastAPI يعمل على http://127.0.0.1:8000 وافتح الصفحة من /app."
+        );
+      }
+      const text = await response.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (error) {
+        throw new Error("السيرفر رجّع رد غير متوقع. تأكد أنك فاتح الواجهة من http://127.0.0.1:8000/app وليس من Live Server أو ملف HTML مباشر.");
+      }
+      if (!response.ok) throw new Error(data.detail || data.error || "حدث خطأ أثناء تنفيذ الطلب");
+      return data;
+    }
+
+    async function initUser() {
+      const savedUserId = localStorage.getItem("cv_assistant_user_id");
+      const user = await requestJson("/api/v1/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: savedUserId, display_name: "Local User" })
+      });
+      userId = user.user_id;
+      localStorage.setItem("cv_assistant_user_id", userId);
+      userLabel.textContent = `User: ${userId.slice(0, 13)}...`;
+      await refreshChatList();
+      const savedChatId = localStorage.getItem("cv_assistant_current_chat_id");
+      if (savedChatId) {
+        try {
+          await loadChat(savedChatId);
+          return;
+        } catch (error) {
+          localStorage.removeItem("cv_assistant_current_chat_id");
+        }
+      }
+      renderEmptyState();
+    }
+
+    async function createNewChat() {
+      const chat = await requestJson("/api/v1/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, title: "محادثة جديدة" })
+      });
+      sessionId = chat.session_id;
+      lastAnalysis = null;
+      localStorage.setItem("cv_assistant_current_chat_id", sessionId);
+      await refreshChatList();
+      renderEmptyState();
+      showStatus("تم إنشاء محادثة جديدة في backend.");
+      return chat;
+    }
+
+    async function ensureChat() {
+      if (sessionId) return sessionId;
+      const chat = await createNewChat();
+      return chat.session_id;
+    }
+
+    async function refreshChatList() {
+      if (!userId) return;
+      const chats = await requestJson(`/api/v1/users/${encodeURIComponent(userId)}/chats`);
+      chatList.innerHTML = chats.map(chat => `
+        <div class="chat-row ${chat.session_id === sessionId ? "active" : ""}">
+          <button class="nav-item" type="button" data-chat-id="${escapeHtml(chat.session_id)}">
+            <i data-lucide="${chat.has_cv ? "file-check-2" : "message-square"}"></i>
+            <span>${escapeHtml(chat.title || "محادثة")}<br><small class="muted">${chat.messages_count} رسالة${chat.filename ? " · " + escapeHtml(chat.filename) : ""}</small></span>
+          </button>
+          <button class="chat-delete" type="button" title="حذف المحادثة" data-delete-chat-id="${escapeHtml(chat.session_id)}">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </div>
+      `).join("");
+      createIcons();
+    }
+
+    async function deleteChat(chatId) {
+      const confirmed = confirm("هل تريد حذف هذه المحادثة ورسائلها؟");
+      if (!confirmed) return;
+      await requestJson(`/api/v1/chats/${encodeURIComponent(chatId)}`, { method: "DELETE" });
+      if (chatId === sessionId) {
+        sessionId = null;
+        lastAnalysis = null;
+        localStorage.removeItem("cv_assistant_current_chat_id");
+        renderEmptyState();
+      }
+      await refreshChatList();
+      showStatus("تم حذف المحادثة.");
+    }
+
+    async function loadChat(chatId) {
+      const chat = await requestJson(`/api/v1/chats/${encodeURIComponent(chatId)}`);
+      sessionId = chat.session_id;
+      localStorage.setItem("cv_assistant_current_chat_id", sessionId);
+      clearChatArea();
+      lastAnalysis = null;
+      renderSavedAnalysis(chat);
+      if (!chat.messages || !chat.messages.length) {
+        renderEmptyState();
+      } else {
+        chat.messages.forEach(message => {
+          addMessage(message.role === "assistant" ? "assistant" : "user", escapeHtml(message.content));
+        });
+      }
+      if (chat.ats) {
+        addMessage("assistant", renderAnalysis({
+          session_id: chat.session_id,
+          user_id: chat.user_id,
+          filename: chat.filename,
+          summary: chat.summary,
+          ats: chat.ats,
+          improvement_suggestions: chat.improvement_suggestions || []
+        }));
+      }
+      await refreshChatList();
+    }
+
+    async function sendChatMessage(message) {
+      if (!message.trim() && !selectedFile) return;
+      await ensureChat();
+      const userText = message.trim() || "حلل الملف المرفق.";
+      addMessage("user", selectedFile ? `${userText}\n\n📎 ${selectedFile.name}` : userText);
+      let loading = addLoadingMessage("جاري بث الإجابة...");
+      let streamedText = "";
+      const fileForRequest = selectedFile;
+      selectedFile = null;
+      updateAttachmentPreview();
+      try {
+        const form = new FormData();
+        form.append("session_id", sessionId);
+        form.append("user_id", userId);
+        form.append("message", userText);
+        if (fileForRequest) form.append("file", fileForRequest);
+
+        const response = await fetch(`${API_BASE}/api/v1/chat/stream`, { method: "POST", body: form });
+        if (!response.ok || !response.body) {
+          const text = await response.text();
+          throw new Error(text || "فشل الاتصال بخدمة البث.");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() || "";
+          for (const eventText of events) {
+            const line = eventText.split("\n").find(part => part.startsWith("data: "));
+            if (!line) continue;
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "analysis") {
+              lastAnalysis = {
+                session_id: event.session_id,
+                filename: event.filename,
+                summary: event.summary,
+                ats: event.ats,
+                improvement_suggestions: event.improvement_suggestions || []
+              };
+              updateAssistantMessage(loading, renderAnalysis(lastAnalysis));
+              loading = addLoadingMessage("جاري استكمال الإجابة...");
+            }
+            if (event.type === "delta") {
+              streamedText += event.content || "";
+              updateAssistantMessage(loading, renderMarkdown(streamedText));
+            }
+            if (event.type === "error") {
+              throw new Error(event.message || "حدث خطأ أثناء البث.");
+            }
+          }
+        }
+        await refreshChatList();
+      } catch (error) {
+        updateAssistantMessage(loading, `<span class="error">${escapeHtml(error.message)}</span>`);
+        showStatus(error.message, true);
+      }
+    }
+
+    async function showInterviewQuestions() {
+      await ensureChat();
+      addMessage("user", "حضّر لي أسئلة مقابلة مناسبة لسيرتي الذاتية.");
+      const loading = addLoadingMessage("جاري تجهيز أسئلة المقابلة...");
+      if (!lastAnalysis) {
+        updateAssistantMessage(loading, "ارفع السيرة الذاتية أولاً، وبعدها سأجهز لك أسئلة مقابلة مخصصة.");
+        return;
+      }
+      try {
+        const data = await requestJson("/api/v1/interview/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId, count: 8 })
+        });
+        const questions = data.questions || [];
+        updateAssistantMessage(loading, `
+          <div>هذه أسئلة مقابلة مناسبة كبداية:</div>
+          <ol>${questions.map(q => `<li>${escapeHtml(q.question)} <span class="muted">(${escapeHtml(q.difficulty || "Mixed")})</span></li>`).join("")}</ol>
+        `);
+      } catch (error) {
+        updateAssistantMessage(loading, `<span class="error">${escapeHtml(error.message)}</span>`);
+      }
+    }
+
+    async function showJobs() {
+      await ensureChat();
+      addMessage("user", "اعرض لي الوظائف المناسبة.");
+      const loading = addLoadingMessage("جاري البحث عن أفضل الوظائف المناسبة...");
+      if (!lastAnalysis) {
+        updateAssistantMessage(loading, "ارفع السيرة الذاتية أولاً حتى أقدر أرشح وظائف مناسبة من الداتا المحلية.");
+        return;
+      }
+      try {
+        const jobs = await requestJson(`/api/v1/jobs/recommendations/${sessionId}`);
+        updateAssistantMessage(loading, `
+          <div>هذه أفضل الوظائف المناسبة حسب سيرتك الذاتية:</div>
+          <div class="list-grid">
+            ${jobs.map(job => `
+              <article class="data-card">
+                <h3>${escapeHtml(job.title || "وظيفة")}</h3>
+                <div>${escapeHtml(job.company || "شركة غير محددة")} · ${escapeHtml(job.location || "موقع غير محدد")}</div>
+                <div class="muted">نسبة التوافق: ${Number(job.match_score || 0).toFixed(2)}</div>
+                ${job.link ? `<a href="${escapeHtml(job.link)}" target="_blank" rel="noreferrer">فتح رابط التقديم</a>` : `<span class="muted">لا يوجد رابط تقديم</span>`}
+              </article>
+            `).join("")}
+          </div>
+        `);
+      } catch (error) {
+        updateAssistantMessage(loading, `<span class="error">${escapeHtml(error.message)}</span>`);
+      }
+    }
+
+    function showImprovements() {
+      addMessage("user", "اقترح تحسينات لسيرتي الذاتية.");
+      if (!lastAnalysis) {
+        addMessage("assistant", "ارفع السيرة الذاتية أولاً حتى أقدر أطلع اقتراحات مبنية على التحليل.");
+        return;
+      }
+      addMessage("assistant", `<strong>اقتراحات تحسين السيرة الذاتية:</strong>${listItems(lastAnalysis.improvement_suggestions)}`);
+    }
+
+    function showTips() {
+      addMessage("user", "اعطني نصائح للمسار المهني.");
+      const prompt = lastAnalysis
+        ? "اعطني نصائح عملية لتطوير مساري المهني بناءً على سيرتي الذاتية والوظائف المناسبة."
+        : "اعطني نصائح عامة لتحسين السيرة الذاتية والاستعداد للمقابلات.";
+      sendChatMessage(prompt);
+    }
+
+    function handleAction(action) {
+      if (action === "upload") {
+        $("chatInput").value = "حلل السيرة الذاتية المرفقة وقيّمها بنظام ATS.";
+        $("cvFile").click();
+      }
+      if (action === "interview") {
+        $("chatInput").value = "حضّر لي أسئلة مقابلة مناسبة بناءً على سيرتي الذاتية.";
+        sendChatMessage($("chatInput").value);
+        $("chatInput").value = "";
+      }
+      if (action === "jobs") {
+        $("chatInput").value = "رشح لي أفضل الوظائف المناسبة واشرح السبب.";
+        sendChatMessage($("chatInput").value);
+        $("chatInput").value = "";
+      }
+      if (action === "improve") showImprovements();
+      if (action === "tips") showTips();
+    }
+
+    document.addEventListener("click", (event) => {
+      const deleteButton = event.target.closest("[data-delete-chat-id]");
+      if (deleteButton) {
+        deleteChat(deleteButton.dataset.deleteChatId).catch(error => showStatus(error.message, true));
+        return;
+      }
+      const chatButton = event.target.closest("[data-chat-id]");
+      if (chatButton) {
+        loadChat(chatButton.dataset.chatId);
+        return;
+      }
+      const actionButton = event.target.closest("[data-action]");
+      if (!actionButton) return;
+      handleAction(actionButton.dataset.action);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("#optionsMenu") && !event.target.closest("#optionsBtn")) {
+        optionsMenu.classList.remove("open");
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      const option = event.target.closest("[data-prompt]");
+      if (!option) return;
+      $("chatInput").value = option.dataset.prompt;
+      optionsMenu.classList.remove("open");
+      $("chatInput").focus();
+    });
+
+    $("cvFile").addEventListener("change", (event) => {
+      selectedFile = event.target.files[0] || null;
+      updateAttachmentPreview();
+      if (selectedFile && !$("chatInput").value.trim()) {
+        $("chatInput").value = "حلل السيرة الذاتية المرفقة وقيّمها بنظام ATS.";
+      }
+    });
+
+    $("chatForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const input = $("chatInput");
+      const message = input.value.trim();
+      input.value = "";
+      sendChatMessage(message);
+    });
+
+    $("attachBtn").addEventListener("click", () => $("cvFile").click());
+    $("optionsBtn").addEventListener("click", () => optionsMenu.classList.toggle("open"));
+    $("settingsBtn").addEventListener("click", openSettings);
+    document.querySelectorAll("[data-open-settings]").forEach(button => button.addEventListener("click", openSettings));
+    $("closeSettingsBtn").addEventListener("click", closeSettings);
+    settingsModal.addEventListener("click", (event) => {
+      if (event.target === settingsModal) closeSettings();
+    });
+
+    $("newChatBtn").addEventListener("click", async () => {
+      try {
+        await createNewChat();
+      } catch (error) {
+        showStatus(error.message, true);
+      }
+    });
+
+    createIcons();
+    initUser().catch(error => {
+      renderEmptyState();
+      showStatus(error.message, true);
+    });
+  </script>
+</body>
+</html>
