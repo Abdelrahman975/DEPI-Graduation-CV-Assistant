@@ -1,15 +1,10 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
 
 class MessageResponse(BaseModel):
     message: str
-
-
-class ErrorResponse(BaseModel):
-    error: str
-    detail: Optional[str] = None
 
 
 class CVSummary(BaseModel):
@@ -60,18 +55,6 @@ class ChatMessage(BaseModel):
     content: str
 
 
-class ChatRequest(BaseModel):
-    session_id: str
-    message: str
-    top_k: int = Field(default=5, ge=1, le=15)
-
-
-class ChatResponse(BaseModel):
-    session_id: str
-    answer: str
-    sources: List[Dict[str, Any]] = Field(default_factory=list)
-
-
 class UserCreateRequest(BaseModel):
     user_id: Optional[str] = None
     display_name: Optional[str] = None
@@ -105,25 +88,3 @@ class ChatSessionResponse(ChatSummary):
     ats: Optional[ATSResult] = None
     improvement_suggestions: List[str] = Field(default_factory=list)
 
-
-class InterviewQuestionRequest(BaseModel):
-    session_id: str
-    difficulty: Optional[Literal["Easy", "Medium", "Hard"]] = None
-    count: int = Field(default=8, ge=1, le=20)
-
-
-class InterviewQuestion(BaseModel):
-    question: str
-    category: Optional[str] = None
-    difficulty: Optional[str] = None
-    source: Literal["retrieved", "generated"] = "retrieved"
-
-
-class InterviewQuestionResponse(BaseModel):
-    session_id: str
-    questions: List[InterviewQuestion]
-
-
-class IndexBuildResponse(BaseModel):
-    message: str
-    collections: Dict[str, int]

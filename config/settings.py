@@ -18,14 +18,12 @@ class Settings(BaseSettings):
     CONN_STR: Optional[str] = None
     SESSION_BACKEND: str = "auto"
     LOG_LEVEL: str = "INFO"
+    CORS_ORIGINS: str = "*"
 
     PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
     DATA_DIR: Path = PROJECT_ROOT / "data"
     CLEAN_JOBS_PATH: Path = DATA_DIR / "clean_jobs.csv"
     INTERVIEW_QUESTIONS_PATH: Path = DATA_DIR / "new" / "coding_interview_question_bank.csv"
-    RESUME_SCREENING_PATH: Path = DATA_DIR / "new" / "AI_Resume_Screening.csv"
-    ATS_TRAIN_PATH: Path = DATA_DIR / "resume-ats-score-v1-en" / "train.csv"
-    ATS_VALIDATION_PATH: Path = DATA_DIR / "resume-ats-score-v1-en" / "validation.csv"
 
     STORAGE_DIR: Path = PROJECT_ROOT / "storage"
     CHROMA_DIR: Path = STORAGE_DIR / "chroma"
@@ -35,7 +33,11 @@ class Settings(BaseSettings):
 
     MAX_UPLOAD_MB: int = 10
     DEFAULT_TOP_JOBS: int = 8
-    DEFAULT_INTERVIEW_COUNT: int = 8
+
+    @property
+    def cors_origins(self) -> list[str]:
+        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        return origins or ["*"]
 
     @field_validator("DEBUG", mode="before")
     @classmethod
@@ -49,6 +51,12 @@ class Settings(BaseSettings):
             if lowered in {"0", "false", "no", "off", "release", "prod", "production"}:
                 return False
         return value
+
+    @field_validator("LOG_LEVEL", mode="before")
+    @classmethod
+    def normalize_log_level(cls, value):
+        level = str(value or "INFO").strip().upper()
+        return level if level in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"} else "INFO"
 
     class Config:
         env_file = ".env"

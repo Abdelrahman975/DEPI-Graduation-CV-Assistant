@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from config.settings import settings
+from core.safety import safe_identifier
 
 
 class SessionStore:
@@ -40,7 +41,7 @@ class SessionStore:
         return session
 
     def create_user(self, user_id: Optional[str] = None, display_name: Optional[str] = None) -> Dict[str, Any]:
-        user_id = self._safe_id(user_id) if user_id else f"user-{uuid.uuid4()}"
+        user_id = safe_identifier(user_id) if user_id else f"user-{uuid.uuid4()}"
         if self.backend == "postgres":
             return self._pg_create_user(user_id, display_name)
         user_path = self.session_dir / "users.json"
@@ -121,12 +122,8 @@ class SessionStore:
         return session
 
     def _path(self, session_id: str) -> Path:
-        safe = self._safe_id(session_id)
+        safe = safe_identifier(session_id)
         return self.session_dir / f"{safe}.json"
-
-    def _safe_id(self, value: str) -> str:
-        cleaned = "".join(ch for ch in str(value or "") if ch.isalnum() or ch in "-_")
-        return cleaned or str(uuid.uuid5(uuid.NAMESPACE_DNS, str(value)))
 
     def _connect_postgres(self) -> None:
         try:

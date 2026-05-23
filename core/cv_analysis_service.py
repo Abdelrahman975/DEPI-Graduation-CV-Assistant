@@ -7,6 +7,7 @@ from config.settings import settings
 from core.ats_service import ats_service
 from core.chat_service.gemini_service import gemini_service
 from core.cv_parser import cv_parser
+from core.safety import safe_filename, safe_identifier
 from core.session_store import session_store
 
 
@@ -18,7 +19,7 @@ class CVAnalysisService:
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        safe_name = Path(filename or "cv.txt").name
+        safe_name = safe_filename(filename)
         suffix = Path(safe_name).suffix.lower()
         if suffix not in cv_parser.SUPPORTED_EXTENSIONS:
             raise ValueError("Please upload a PDF, DOCX, or TXT CV.")
@@ -27,8 +28,8 @@ class CVAnalysisService:
         if len(file_content) > max_bytes:
             raise ValueError(f"CV is too large. Max size is {settings.MAX_UPLOAD_MB} MB.")
 
-        session_id = session_id or str(uuid.uuid4())
-        user_id = user_id or "anonymous"
+        session_id = safe_identifier(session_id) if session_id else str(uuid.uuid4())
+        user_id = safe_identifier(user_id) if user_id else "anonymous"
         settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         upload_path = settings.UPLOAD_DIR / f"{session_id}_{safe_name}"
         upload_path.write_bytes(file_content)

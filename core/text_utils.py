@@ -43,7 +43,13 @@ GENERIC_MISSING_TERMS = {
     "Build", "Help", "Join", "Knowledge", "Modern", "Opportunity", "Platform", "Preferred",
     "Qualifications", "Required", "Responsibilities", "Strong", "Systems",
     "Through", "Tools", "What", "Working", "Work", "Team", "Role", "Job",
+    "Learning", "Machine", "Engineer", "Engineering", "Built", "Data", "Deep",
+    "Generative", "Apis", "Apply", "Existing", "User", "Month", "Time", "Like",
+    "Other", "Where", "Human", "Language", "Paid", "Software", "Technical",
+    "Senior", "Testing", "Teams",
 }
+
+DISPLAY_NOISE_TERMS = {term.lower() for term in GENERIC_MISSING_TERMS}
 
 
 def normalize_text(text: str) -> str:
@@ -90,7 +96,11 @@ def lexical_score(query: str, document: str) -> float:
 
 def matched_terms(left: str, right: str, limit: int = 12) -> List[str]:
     known = [s for s in extract_known_skills(left) if s.lower() in (right or "").lower()]
-    keyword_matches = [kw.title() for kw in top_keywords(left, 40) if kw in top_keywords(right, 120)]
+    keyword_matches = [
+        kw.title()
+        for kw in top_keywords(left, 40)
+        if kw in top_keywords(right, 120) and kw.lower() not in DISPLAY_NOISE_TERMS
+    ]
     return dedupe_keep_order([*known, *keyword_matches])[:limit]
 
 
@@ -101,7 +111,12 @@ def missing_terms(cv_text: str, job_text: str, limit: int = 12) -> List[str]:
     if len(missing) < limit:
         for kw in top_keywords(job_text, 60):
             titled = kw.title()
-            if kw not in cv_lower and titled not in missing and titled not in GENERIC_MISSING_TERMS:
+            if (
+                kw not in cv_lower
+                and kw.lower() not in DISPLAY_NOISE_TERMS
+                and titled not in missing
+                and titled not in GENERIC_MISSING_TERMS
+            ):
                 missing.append(titled)
             if len(missing) >= limit:
                 break

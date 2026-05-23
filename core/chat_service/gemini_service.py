@@ -52,19 +52,6 @@ Do not include an introduction or closing sentence.
         suggestions = self._lines_to_list(text)
         return suggestions or self._fallback_suggestions(ats_payload)
 
-    def chat(
-        self,
-        cv_text: str,
-        user_message: str,
-        retrieved_context: List[Dict],
-        history: Optional[List[Dict]] = None,
-    ) -> str:
-        if not self.available:
-            return self._fallback_chat(user_message, retrieved_context)
-        prompt = self._build_chat_prompt(cv_text, user_message, retrieved_context, history)
-        answer = self._generate(prompt).strip()
-        return answer or self._fallback_chat(user_message, retrieved_context)
-
     def stream_chat(
         self,
         cv_text: str,
@@ -91,42 +78,14 @@ Do not include an introduction or closing sentence.
                         emitted = True
                         yield text
                 if not emitted:
-                    yield from self._chunk_text(self.chat(cv_text, user_message, retrieved_context, history))
+                    text = self._generate(prompt).strip() or self._fallback_chat(user_message, retrieved_context)
+                    yield from self._chunk_text(text)
                 return
             except Exception as exc:
                 last_error = exc
                 continue
         self.init_error = str(last_error) if last_error else "Gemini streaming failed."
         yield from self._chunk_text(self._fallback_chat(user_message, retrieved_context))
-
-    def generate_interview_questions(
-        self,
-        cv_text: str,
-        retrieved_questions: List[Dict],
-        count: int,
-        difficulty: Optional[str] = None,
-    ) -> List[str]:
-        if not self.available:
-            return []
-        retrieved_text = "\n".join(
-            f"- {item.get('document') or item.get('question', '')}" for item in retrieved_questions
-        )
-        prompt = f"""
-{CV_ASSISTANT_SYSTEM_PROMPT}
-
-Create {count} interview questions tailored to this CV.
-Difficulty filter: {difficulty or "mixed"}.
-Use the retrieved question bank as inspiration, but make at least half the questions specific to the CV.
-
-CV:
-{cv_text[:10000]}
-
-Retrieved questions:
-{retrieved_text}
-
-Return only numbered questions.
-"""
-        return self._lines_to_list(self._generate(prompt))[:count]
 
     def _generate(self, prompt: str) -> str:
         if not self.genai:
@@ -216,9 +175,25 @@ Instructions:
         for line in (text or "").splitlines():
             line = line.strip()
             line = re.sub(r"^\s*(?:[-•*]|\d+[.)])\s+", "", line)
-            if line:
+            if line and not self._is_non_action_line(line):
                 cleaned.append(line)
         return cleaned
+
+    def _is_non_action_line(self, line: str) -> bool:
+        lowered = line.strip().lower().rstrip(":")
+        prefixes = (
+            "here are",
+            "here is",
+            "below are",
+            "these are",
+            "certainly",
+            "of course",
+        )
+        endings = (
+            "hope this helps",
+            "let me know",
+        )
+        return lowered.startswith(prefixes) or any(ending in lowered for ending in endings)
 
     def _fallback_suggestions(self, ats_payload: Dict) -> List[str]:
         missing = ats_payload.get("missing_skills", [])[:6] if isinstance(ats_payload, dict) else []

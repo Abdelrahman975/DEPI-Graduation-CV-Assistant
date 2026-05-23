@@ -3,6 +3,9 @@ import logging.handlers
 
 from config.settings import settings
 
+FILE_HANDLER_NAME = "cv_assistant_file"
+CONSOLE_HANDLER_NAME = "cv_assistant_console"
+
 
 def configure_logging() -> None:
     log_dir = settings.LOG_DIR
@@ -20,7 +23,7 @@ def configure_logging() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if file_logging_available and not _has_named_handler(root_logger, "cv_assistant_file"):
+    if file_logging_available and not _has_named_handler(root_logger, FILE_HANDLER_NAME):
         try:
             file_handler = logging.handlers.RotatingFileHandler(
                 log_dir / "app.log",
@@ -28,16 +31,16 @@ def configure_logging() -> None:
                 backupCount=5,
                 encoding="utf-8",
             )
-            file_handler.name = "cv_assistant_file"
+            file_handler.set_name(FILE_HANDLER_NAME)
             file_handler.setLevel(logging.DEBUG)
             file_handler.setFormatter(formatter)
             root_logger.addHandler(file_handler)
         except OSError:
             file_logging_available = False
 
-    if not _has_named_handler(root_logger, "cv_assistant_console"):
+    if not _has_named_handler(root_logger, CONSOLE_HANDLER_NAME):
         console_handler = logging.StreamHandler()
-        console_handler.name = "cv_assistant_console"
+        console_handler.set_name(CONSOLE_HANDLER_NAME)
         console_handler.setLevel(logging.INFO)
         console_handler.setFormatter(formatter)
         root_logger.addHandler(console_handler)
@@ -52,4 +55,4 @@ def configure_logging() -> None:
 
 
 def _has_named_handler(logger: logging.Logger, name: str) -> bool:
-    return any(getattr(handler, "name", None) == name for handler in logger.handlers)
+    return any(handler.get_name() == name for handler in logger.handlers)
