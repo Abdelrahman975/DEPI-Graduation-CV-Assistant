@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import AsyncGenerator, Awaitable, Callable, Optional
 
 from core.chat_service.gemini_service import gemini_service
@@ -8,6 +9,7 @@ from core.vector_store import vector_store
 
 
 DisconnectChecker = Optional[Callable[[], Awaitable[bool]]]
+logger = logging.getLogger(__name__)
 
 
 class StreamingChatService:
@@ -82,6 +84,7 @@ class StreamingChatService:
             yield self._sse({"type": "done", "session_id": session_id})
             yield "data: [DONE]\n\n"
         except Exception as exc:
+            logger.exception("Streaming chat failed for session %s", session_id)
             yield self._sse({"type": "error", "message": str(exc)})
             yield "data: [DONE]\n\n"
 

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
     CONN_STR: Optional[str] = None
     SESSION_BACKEND: str = "auto"
+    LOG_LEVEL: str = "INFO"
 
     PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
     DATA_DIR: Path = PROJECT_ROOT / "data"
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     CHROMA_DIR: Path = STORAGE_DIR / "chroma"
     UPLOAD_DIR: Path = STORAGE_DIR / "uploads"
     SESSION_DIR: Path = STORAGE_DIR / "sessions"
+    LOG_DIR: Path = STORAGE_DIR / "logs"
 
     MAX_UPLOAD_MB: int = 10
     DEFAULT_TOP_JOBS: int = 8
