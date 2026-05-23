@@ -1,10 +1,8 @@
-import json
-
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
 from core.chat_service.gemini_service import gemini_service
-from core.cv_analysis_service import cv_analysis_service
+from core.chat_service.streaming_chat_service import streaming_chat_service
 from core.session_store import session_store
 from core.vector_store import vector_store
 from dto.schemas import ChatRequest, ChatResponse
@@ -46,12 +44,9 @@ async def chat_message(request: ChatRequest):
     return ChatResponse(session_id=request.session_id, answer=answer, sources=sources)
 
 
-def _sse(payload: dict) -> str:
-    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-
-
 @router.post("/stream", summary="Stream chat response using SSE")
 async def chat_stream(
+    request: Request,
     session_id: str = Form(...),
     message: str = Form(default=""),
     user_id: str | None = Form(default=None),
@@ -65,56 +60,19 @@ async def chat_stream(
     uploaded_filename = file.filename if file and file.filename else None
     uploaded_content = await file.read() if uploaded_filename else None
 
-    async def event_generator():
-        final_text = ""
-        current_message = (message or "").strip()
-
-        try:
-            if uploaded_filename and uploaded_content is not None:
-                result = cv_analysis_service.analyze_and_save(
-                    file_content=uploaded_content,
-                    filename=uploaded_filename,
-                    user_id=user_id or session.get("user_id"),
-                    session_id=session_id,
-                )
-                session_payload = result["payload"]
-                yield _sse(
-                    {
-                        "type": "analysis",
-                        "session_id": session_id,
-                        "filename": result["filename"],
-                        "summary": result["summary"],
-                        "ats": result["ats"].model_dump(),
-                        "improvement_suggestions": result["improvement_suggestions"],
-                    }
-                )
-
-            if not current_message:
-                current_message = (
-                    "حلل السيرة الذاتية المرفقة وقدم ملخصاً عملياً للتحسينات والوظائف المناسبة."
-                    if uploaded_filename
-                    else "ابدأ المحادثة وساعدني في تحسين سيرتي الذاتية."
-                )
-
-            session_payload = session_store.require(session_id)
-            history = session_payload.get("chat_history", [])
-            cv_text = session_payload.get("cv_text", "")
-            query = f"{current_message}\n\nCV:\n{cv_text[:5000]}" if cv_text else current_message
-            context = vector_store.search_context(query, top_k=6)
-
-            session_store.append_message(session_id, "user", current_message)
-            for chunk in gemini_service.stream_chat(
-                cv_text=cv_text,
-                user_message=current_message,
-                retrieved_context=context,
-                history=history,
-            ):
-                final_text += chunk
-                yield _sse({"type": "delta", "content": chunk})
-
-            session_store.append_message(session_id, "assistant", final_text)
-            yield _sse({"type": "done", "session_id": session_id})
-        except Exception as exc:
-            yield _sse({"type": "error", "message": str(exc)})
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        streaming_chat_service.stream_chat(
+            session_id=session_id,
+            message=message,
+            user_id=user_id,
+            uploaded_filename=uploaded_filename,
+            uploaded_content=uploaded_content,
+            is_disconnected=request.is_disconnected,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

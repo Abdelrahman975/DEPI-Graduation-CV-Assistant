@@ -13,6 +13,15 @@ COMMON_SKILLS = {
     "node", "django", "flask", "fastapi", "api", "mongodb",
     "postgresql", "mysql", "cybersecurity", "network security",
     "data science", "communication", "leadership", "agile", "scrum",
+    "rag", "llm", "generative ai", "langchain", "vector database",
+    "computer vision", "opencv", "hugging face", "transformers",
+    "mlops", "ci/cd", "github actions", "terraform", "ansible",
+    "jenkins", "nginx", "prometheus", "grafana", "redis",
+    "business analysis", "requirements gathering", "stakeholder management",
+    "process mapping", "user stories", "jira", "confluence", "oracle",
+    "salesforce", "sap", "looker", "qlik", "spss", "sas",
+    "business analyst", "data analyst", "requirements analysis", "gap analysis",
+    "sdlc", "waterfall", "rup", "uml", "ms visio", "uat",
 }
 
 STOP_WORDS = {
@@ -21,6 +30,19 @@ STOP_WORDS = {
     "job", "work", "team", "role", "skills", "experience", "years",
     "using", "use", "show", "more", "less", "about", "into", "their",
     "they", "them", "its", "such", "within", "across", "based",
+    "developer", "development", "candidate", "required", "preferred",
+    "responsibilities", "qualifications", "including", "strong", "excellent",
+    "ability", "knowledge", "tools", "systems", "platform", "modern",
+    "help", "through", "both", "join", "looking", "seeking", "current",
+    "what", "build", "opportunity", "working", "include", "includes",
+    "daily", "various", "new", "support", "creating", "created",
+}
+
+GENERIC_MISSING_TERMS = {
+    "Ability", "Both", "Candidate", "Current", "Developer", "Development",
+    "Build", "Help", "Join", "Knowledge", "Modern", "Opportunity", "Platform", "Preferred",
+    "Qualifications", "Required", "Responsibilities", "Strong", "Systems",
+    "Through", "Tools", "What", "Working", "Work", "Team", "Role", "Job",
 }
 
 
@@ -75,11 +97,12 @@ def matched_terms(left: str, right: str, limit: int = 12) -> List[str]:
 def missing_terms(cv_text: str, job_text: str, limit: int = 12) -> List[str]:
     cv_lower = (cv_text or "").lower()
     job_skills = extract_known_skills(job_text)
-    missing = [skill for skill in job_skills if skill.lower() not in cv_lower]
+    missing = [skill for skill in job_skills if skill.lower() not in cv_lower and skill not in GENERIC_MISSING_TERMS]
     if len(missing) < limit:
         for kw in top_keywords(job_text, 60):
-            if kw not in cv_lower and kw.title() not in missing:
-                missing.append(kw.title())
+            titled = kw.title()
+            if kw not in cv_lower and titled not in missing and titled not in GENERIC_MISSING_TERMS:
+                missing.append(titled)
             if len(missing) >= limit:
                 break
     return missing[:limit]

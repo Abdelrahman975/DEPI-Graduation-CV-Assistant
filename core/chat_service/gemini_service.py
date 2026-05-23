@@ -44,6 +44,9 @@ CV text:
 {cv_text[:12000]}
 
 Return only a bullet list.
+Use exactly this format for each item:
+- **Short action title:** one clear practical recommendation.
+Do not include an introduction or closing sentence.
 """
         text = self._generate(prompt)
         suggestions = self._lines_to_list(text)
@@ -207,10 +210,12 @@ Instructions:
         return result
 
     def _lines_to_list(self, text: str) -> List[str]:
+        import re
+
         cleaned = []
         for line in (text or "").splitlines():
             line = line.strip()
-            line = line.lstrip("-*0123456789. )")
+            line = re.sub(r"^\s*(?:[-•*]|\d+[.)])\s+", "", line)
             if line:
                 cleaned.append(line)
         return cleaned

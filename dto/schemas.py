@@ -40,6 +40,7 @@ class ATSResult(BaseModel):
     score: float
     label: Literal["No Fit", "Potential Fit", "Good Fit"]
     explanation: str
+    score_breakdown: Dict[str, float] = Field(default_factory=dict)
     matched_skills: List[str] = Field(default_factory=list)
     missing_skills: List[str] = Field(default_factory=list)
     top_jobs: List[JobRecommendation] = Field(default_factory=list)

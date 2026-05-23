@@ -451,6 +451,52 @@
       font-size: 13px;
     }
 
+    .score-breakdown {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      max-width: 920px;
+    }
+
+    .score-part {
+      border: 1px solid #34413e;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #181b1a;
+      color: #dce3e0;
+      min-width: 0;
+    }
+
+    .score-part strong {
+      display: block;
+      color: var(--accent-soft);
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .score-part span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 4px;
+    }
+
+    .suggestion-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+      max-width: 920px;
+    }
+
+    .suggestion-item {
+      border: 1px solid #34413e;
+      border-radius: 8px;
+      background: #181b1a;
+      padding: 12px 14px;
+      line-height: 1.75;
+    }
+
     .muted {
       color: var(--muted);
     }
@@ -870,7 +916,8 @@
       }
       .quick-cards,
       .list-grid,
-      .metric-strip {
+      .metric-strip,
+      .score-breakdown {
         grid-template-columns: 1fr;
       }
       .composer {
@@ -1298,6 +1345,20 @@
       return `<ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
     }
 
+    function renderSuggestionList(items) {
+      if (!items || !items.length) return "<span class='muted'>غير متوفر</span>";
+      return `<div class="suggestion-list">${items.map(item => `
+        <div class="suggestion-item">${formatSuggestionText(item)}</div>
+      `).join("")}</div>`;
+    }
+
+    function formatSuggestionText(value) {
+      let text = escapeHtml(value || "");
+      text = text.replace(/(\*\*|__)(.+?)\1/g, "<strong>$2</strong>");
+      text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+      return text;
+    }
+
     function pills(items) {
       if (!items || !items.length) return "<span class='muted'>غير متوفر</span>";
       return items.map(item => `<span class="pill">${escapeHtml(item)}</span>`).join("");
@@ -1338,6 +1399,7 @@
       const summary = data.summary || {};
       const ats = data.ats || {};
       const jobs = (ats.top_jobs || []).filter(isUsableJob);
+      const breakdown = ats.score_breakdown || {};
 
       const jobsHtml = jobs.slice(0, 4).map(job => `
         <article class="data-card">
@@ -1356,10 +1418,16 @@
             <div class="metric"><strong>${escapeHtml(ats.label || "-")}</strong><span>التقييم العام</span></div>
             <div class="metric"><strong>${escapeHtml((summary.likely_roles || ["-"])[0])}</strong><span>أقرب مسار</span></div>
           </div>
+          <div class="score-breakdown">
+            <div class="score-part"><strong>${Number(breakdown.job_alignment || 0).toFixed(0)}</strong><span>توافق الوظائف المحلية</span></div>
+            <div class="score-part"><strong>${Number(breakdown.skills_coverage || 0).toFixed(0)}</strong><span>تغطية المهارات</span></div>
+            <div class="score-part"><strong>${Number(breakdown.cv_structure || 0).toFixed(0)}</strong><span>تنظيم السيرة</span></div>
+            <div class="score-part"><strong>${Number(breakdown.impact_evidence || 0).toFixed(0)}</strong><span>أرقام وإنجازات</span></div>
+          </div>
           <div>${escapeHtml(ats.explanation || "")}</div>
           <div><strong>المهارات المتطابقة:</strong><br>${pills(ats.matched_skills)}</div>
           <div><strong>المهارات الناقصة:</strong><br>${pills(ats.missing_skills)}</div>
-          <div><strong>اقتراحات التحسين:</strong>${listItems(data.improvement_suggestions)}</div>
+          <div><strong>اقتراحات التحسين:</strong>${renderSuggestionList(data.improvement_suggestions)}</div>
           <div><strong>أفضل الوظائف المناسبة:</strong></div>
           <div class="list-grid">${jobsHtml || "<div class='data-card'>لا توجد وظائف مناسبة حالياً.</div>"}</div>
         </div>`;
@@ -1527,7 +1595,9 @@
           for (const eventText of events) {
             const line = eventText.split("\n").find(part => part.startsWith("data: "));
             if (!line) continue;
-            const event = JSON.parse(line.slice(6));
+            const payload = line.slice(6).trim();
+            if (payload === "[DONE]") continue;
+            const event = JSON.parse(payload);
             if (event.type === "analysis") {
               lastAnalysis = {
                 session_id: event.session_id,
