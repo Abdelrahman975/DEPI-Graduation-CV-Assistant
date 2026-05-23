@@ -4,7 +4,7 @@ import logging
 import math
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from config.settings import settings
 from core.job_filters import is_masked_job
@@ -17,8 +17,6 @@ logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL)
 class VectorStore:
     JOBS = "jobs"
     INTERVIEW = "interview_questions"
-    ATS = "ats_examples"
-    SCREENING = "resume_screening"
 
     def __init__(self):
         self.chroma_available = False
@@ -41,13 +39,10 @@ class VectorStore:
             self.init_error = None
 
     def build_all(self, reset: bool = True) -> Dict[str, int]:
-        counts = {
+        return {
             self.JOBS: self._build_jobs(reset=reset),
             self.INTERVIEW: self._build_interview_questions(reset=reset),
-            self.ATS: self._build_ats_examples(reset=reset),
-            self.SCREENING: self._build_resume_screening(reset=reset),
         }
-        return counts
 
     def search_jobs(self, query: str, top_k: int = 8) -> List[Dict[str, Any]]:
         search_k = max(top_k * 6, top_k)
@@ -131,57 +126,6 @@ class VectorStore:
                     "category": row.get("category", ""),
                     "difficulty": row.get("difficulty", ""),
                     "date": row.get("date", ""),
-                }
-            )
-        self._add_in_batches(collection, ids, documents, metadatas)
-        return len(ids)
-
-    def _build_ats_examples(self, reset: bool) -> int:
-        rows = [*self._read_csv(settings.ATS_TRAIN_PATH), *self._read_csv(settings.ATS_VALIDATION_PATH)]
-        if not self.chroma_available:
-            return len(rows)
-        collection = self._get_collection(self.ATS, reset=reset)
-        ids, documents, metadatas = [], [], []
-        for idx, row in enumerate(rows, 1):
-            document = normalize_text(row.get("text", ""))
-            if not document:
-                continue
-            ids.append(f"ats-{idx}")
-            documents.append(document[:12000])
-            metadatas.append(
-                {
-                    "kind": "ats_example",
-                    "ats_score": float(row.get("ats_score") or 0),
-                    "original_label": row.get("original_label", ""),
-                }
-            )
-        self._add_in_batches(collection, ids, documents, metadatas)
-        return len(ids)
-
-    def _build_resume_screening(self, reset: bool) -> int:
-        rows = self._read_csv(settings.RESUME_SCREENING_PATH)
-        if not self.chroma_available:
-            return len(rows)
-        collection = self._get_collection(self.SCREENING, reset=reset)
-        ids, documents, metadatas = [], [], []
-        for row in rows:
-            resume_id = row.get("Resume_ID") or str(len(ids) + 1)
-            document = normalize_text(
-                f"{row.get('Job Role', '')}. Skills: {row.get('Skills', '')}. "
-                f"Education: {row.get('Education', '')}. Certifications: {row.get('Certifications', '')}."
-            )
-            if not document:
-                continue
-            ids.append(f"screening-{resume_id}")
-            documents.append(document)
-            metadatas.append(
-                {
-                    "kind": "resume_screening",
-                    "resume_id": str(resume_id),
-                    "job_role": row.get("Job Role", ""),
-                    "skills": row.get("Skills", ""),
-                    "ai_score": float(row.get("AI Score (0-100)") or 0),
-                    "decision": row.get("Recruiter Decision", ""),
                 }
             )
         self._add_in_batches(collection, ids, documents, metadatas)

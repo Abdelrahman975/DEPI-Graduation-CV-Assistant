@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -10,7 +8,7 @@ from core.chat_service.gemini_service import gemini_service
 from core.session_store import session_store
 from core.vector_store import vector_store
 from logging_config import configure_logging
-from routes import chat, conversations, cv, index, interview, jobs
+from routes import chat, conversations, cv
 
 configure_logging()
 
@@ -20,10 +18,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
+cors_origins = settings.cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials="*" not in cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -31,9 +30,6 @@ app.add_middleware(
 app.include_router(cv.router, prefix=settings.API_V1_STR)
 app.include_router(conversations.router, prefix=settings.API_V1_STR)
 app.include_router(chat.router, prefix=settings.API_V1_STR)
-app.include_router(jobs.router, prefix=settings.API_V1_STR)
-app.include_router(interview.router, prefix=settings.API_V1_STR)
-app.include_router(index.router, prefix=settings.API_V1_STR)
 
 app.mount("/static", StaticFiles(directory=str(settings.PROJECT_ROOT / "static")), name="static")
 
@@ -77,13 +73,10 @@ async def public_config():
         "limits": {
             "max_upload_mb": settings.MAX_UPLOAD_MB,
             "default_top_jobs": settings.DEFAULT_TOP_JOBS,
-            "default_interview_count": settings.DEFAULT_INTERVIEW_COUNT,
         },
         "features": {
             "sse_streaming": "/api/v1/chat/stream",
             "cv_analysis": "/api/v1/cv/analyze",
-            "job_recommendations": "/api/v1/jobs/recommendations/{session_id}",
-            "interview_questions": "/api/v1/interview/questions",
         },
         "storage": {
             "session_backend": session_store.backend,

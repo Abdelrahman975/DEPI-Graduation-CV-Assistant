@@ -1,8 +1,8 @@
-from pathlib import Path
 import logging
 import os
 import shutil
 import sys
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -16,7 +16,7 @@ logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICA
 logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL)
 
 
-def clean_chroma_index():
+def clean_chroma_index() -> None:
     chroma_dir = settings.CHROMA_DIR.resolve()
     storage_dir = settings.STORAGE_DIR.resolve()
     if not chroma_dir.is_relative_to(storage_dir):
@@ -26,7 +26,7 @@ def clean_chroma_index():
     chroma_dir.mkdir(parents=True, exist_ok=True)
 
 
-def main():
+def main() -> None:
     clean_chroma_index()
     from core.vector_store import vector_store
 
