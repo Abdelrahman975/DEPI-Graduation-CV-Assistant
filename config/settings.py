@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-2.5-flash-lite"
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    CONN_STR: Optional[str] = None
+    SESSION_BACKEND: str = "auto"
 
     PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
     DATA_DIR: Path = PROJECT_ROOT / "data"

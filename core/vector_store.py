@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from config.settings import settings
+from core.job_filters import is_masked_job
 from core.text_utils import lexical_score, normalize_text
 
 logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
@@ -49,8 +50,10 @@ class VectorStore:
         return counts
 
     def search_jobs(self, query: str, top_k: int = 8) -> List[Dict[str, Any]]:
+        search_k = max(top_k * 6, top_k)
         if self.chroma_available and self._collection_exists(self.JOBS):
-            return self._query_collection(self.JOBS, query, top_k)
+            results = self._query_collection(self.JOBS, query, search_k)
+            return [item for item in results if not is_masked_job(item)][:top_k]
         return self._fallback_jobs(query, top_k)
 
     def search_interview_questions(
@@ -83,6 +86,8 @@ class VectorStore:
         collection = self._get_collection(self.JOBS, reset=reset)
         documents, ids, metadatas = [], [], []
         for row in rows:
+            if is_masked_job(row):
+                continue
             job_id = row.get("id") or str(len(ids) + 1)
             document = normalize_text(
                 f"{row.get('title', '')}\n{row.get('company', '')}\n{row.get('location', '')}\n{row.get('description', '')}"
@@ -206,6 +211,8 @@ class VectorStore:
         rows = self._read_csv(settings.CLEAN_JOBS_PATH)
         scored = []
         for row in rows:
+            if is_masked_job(row):
+                continue
             document = normalize_text(
                 f"{row.get('title', '')} {row.get('company', '')} {row.get('location', '')} {row.get('description', '')}"
             )
@@ -252,11 +259,20 @@ class VectorStore:
 
     def _create_embedding_function(self):
         try:
-            from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
-
-            return SentenceTransformerEmbeddingFunction(model_name=settings.EMBEDDING_MODEL)
+            return LocalSentenceTransformerEmbeddingFunction(settings.EMBEDDING_MODEL)
         except Exception:
             return HashEmbeddingFunction()
+
+
+class LocalSentenceTransformerEmbeddingFunction:
+    def __init__(self, model_name: str):
+        from sentence_transformers import SentenceTransformer
+
+        self.model = SentenceTransformer(model_name, local_files_only=True)
+
+    def __call__(self, input):
+        embeddings = self.model.encode(list(input), normalize_embeddings=True)
+        return embeddings.tolist()
 
 
 class HashEmbeddingFunction:

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from config.settings import settings
+from core.session_store import session_store
 from routes import chat, conversations, cv, index, interview, jobs
 
 app = FastAPI(
@@ -41,7 +42,12 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "app": settings.APP_NAME}
+    return {
+        "status": "healthy",
+        "app": settings.APP_NAME,
+        "session_backend": session_store.backend,
+        "session_backend_error": session_store.db_error,
+    }
 
 
 @app.get("/app")

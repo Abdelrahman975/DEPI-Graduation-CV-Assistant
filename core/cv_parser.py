@@ -1,4 +1,7 @@
+import subprocess
+import tempfile
 from pathlib import Path
+from importlib import util
 from typing import Dict, List
 
 from core.text_utils import (
@@ -28,7 +31,7 @@ class CVParser:
         text = normalize_text(text)
         if len(text) < 80:
             raise ValueError(
-                "Could not extract enough text from this CV. If it is scanned, please upload a text-based PDF, DOCX, or TXT file."
+                "لم أستطع استخراج نص كاف من الملف. لو السيرة الذاتية صورة أو PDF ممسوح ضوئياً، ارفع نسخة نصية PDF أو DOCX أو TXT."
             )
         return text
 
@@ -47,16 +50,171 @@ class CVParser:
         }
 
     def _parse_pdf(self, file_path: Path) -> str:
+        errors = []
+        try:
+            import fitz
+
+            document = fitz.open(file_path)
+            try:
+                text = "\n".join(page.get_text() for page in document)
+            finally:
+                document.close()
+            if text.strip():
+                return text
+            errors.append("PyMuPDF extracted no text")
+        except Exception as exc:
+            errors.append(f"PyMuPDF: {exc}")
+
         try:
             from pypdf import PdfReader
-        except ImportError as exc:
-            raise RuntimeError("PDF parsing requires pypdf. Install project requirements.") from exc
 
-        reader = PdfReader(str(file_path))
-        pages = []
-        for page in reader.pages:
-            pages.append(page.extract_text() or "")
-        return "\n".join(pages)
+            reader = PdfReader(str(file_path))
+            pages = [page.extract_text() or "" for page in reader.pages]
+            text = "\n".join(pages)
+            if text.strip():
+                return text
+            errors.append("pypdf extracted no text")
+        except Exception as exc:
+            errors.append(f"pypdf: {exc}")
+
+        ocr_text = self._parse_pdf_with_optional_ocr(file_path)
+        if ocr_text.strip():
+            return ocr_text
+
+        raise RuntimeError(
+            "لم أستطع قراءة نص من ملف PDF. غالباً الملف ممسوح ضوئياً أو عبارة عن صور. "
+            "ارفع نسخة نصية من الـ PDF أو ملف DOCX/TXT، أو تأكد أن OCR متاح على الجهاز."
+        )
+
+    def _parse_pdf_with_optional_ocr(self, file_path: Path) -> str:
+        texts = self._parse_pdf_with_windows_ocr(file_path)
+        if texts.strip():
+            return texts
+
+        if not util.find_spec("pytesseract") or not util.find_spec("PIL"):
+            return ""
+
+        try:
+            import fitz
+            import pytesseract
+            from PIL import Image
+        except Exception:
+            return ""
+
+        texts: List[str] = []
+        try:
+            document = fitz.open(file_path)
+            try:
+                for page in document:
+                    pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                    image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+                    try:
+                        text = pytesseract.image_to_string(image, lang="eng+ara")
+                    except Exception:
+                        text = pytesseract.image_to_string(image, lang="eng")
+                    if text.strip():
+                        texts.append(text)
+            finally:
+                document.close()
+        except Exception:
+            return ""
+        return "\n".join(texts)
+
+    def _parse_pdf_with_windows_ocr(self, file_path: Path) -> str:
+        try:
+            import fitz
+        except Exception:
+            return ""
+
+        texts: List[str] = []
+        try:
+            document = fitz.open(file_path)
+            try:
+                with tempfile.TemporaryDirectory(prefix="cv_ocr_") as temp_dir:
+                    for index, page in enumerate(document):
+                        image_path = Path(temp_dir) / f"page_{index + 1}.png"
+                        pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                        pixmap.save(str(image_path))
+                        page_text = self._ocr_image_with_windows(image_path)
+                        if page_text.strip():
+                            texts.append(page_text)
+            finally:
+                document.close()
+        except Exception:
+            return ""
+        return "\n".join(texts)
+
+    def _ocr_image_with_windows(self, image_path: Path) -> str:
+        script = r"""
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$imagePath = $args[0]
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$null = [Windows.Storage.StorageFile, Windows.Storage, ContentType=WindowsRuntime]
+$null = [Windows.Storage.FileAccessMode, Windows.Storage, ContentType=WindowsRuntime]
+$null = [Windows.Storage.Streams.IRandomAccessStream, Windows.Storage.Streams, ContentType=WindowsRuntime]
+$null = [Windows.Graphics.Imaging.BitmapDecoder, Windows.Graphics.Imaging, ContentType=WindowsRuntime]
+$null = [Windows.Graphics.Imaging.SoftwareBitmap, Windows.Graphics.Imaging, ContentType=WindowsRuntime]
+$null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType=WindowsRuntime]
+$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
+  $_.Name -eq 'AsTask' -and $_.IsGenericMethod -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1'
+})[0]
+function Await-WinRt($operation, [type]$resultType) {
+  $asTask = $asTaskGeneric.MakeGenericMethod($resultType)
+  $task = $asTask.Invoke($null, @($operation))
+  $task.Wait() | Out-Null
+  return $task.Result
+}
+$file = Await-WinRt ([Windows.Storage.StorageFile]::GetFileFromPathAsync($imagePath)) ([Windows.Storage.StorageFile])
+$stream = Await-WinRt ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream])
+$decoder = Await-WinRt ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
+$bitmap = Await-WinRt ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
+$engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages()
+if ($null -eq $engine) { exit 2 }
+$result = Await-WinRt ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
+$result.Text
+"""
+        script_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w",
+                suffix=".ps1",
+                prefix="cv_windows_ocr_",
+                delete=False,
+                encoding="utf-8",
+            ) as handle:
+                handle.write(script)
+                script_path = Path(handle.name)
+
+            completed = subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    str(script_path),
+                    str(image_path),
+                ],
+                capture_output=True,
+                encoding="utf-8",
+                errors="ignore",
+                timeout=45,
+                check=False,
+            )
+        except Exception:
+            return ""
+        finally:
+            if script_path:
+                try:
+                    script_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+
+        if completed.returncode != 0:
+            return ""
+        return completed.stdout.strip()
 
     def _parse_docx(self, file_path: Path) -> str:
         try:

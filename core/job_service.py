@@ -1,6 +1,7 @@
 from typing import List
 
 from config.settings import settings
+from core.job_filters import is_masked_job
 from core.text_utils import matched_terms, missing_terms
 from core.vector_store import vector_store
 from dto.schemas import JobRecommendation
@@ -12,6 +13,8 @@ class JobService:
         results = vector_store.search_jobs(cv_text, top_k=top_k)
         recommendations = []
         for idx, result in enumerate(results, 1):
+            if is_masked_job(result):
+                continue
             document = result.get("document", "")
             score = result.get("_distance_score", 0.0)
             recommendations.append(
@@ -29,7 +32,7 @@ class JobService:
                     description_preview=document[:420] if document else None,
                 )
             )
-        return recommendations
+        return recommendations[:top_k]
 
 
 job_service = JobService()

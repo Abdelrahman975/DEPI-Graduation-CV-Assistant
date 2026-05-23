@@ -27,7 +27,13 @@ Add your Gemini key to `.env`:
 ```env
 GOOGLE_API_KEY=...
 GEMINI_MODEL=gemini-2.5-flash-lite
+SESSION_BACKEND=auto
+CONN_STR=postgresql://postgres:postgres@localhost:5432/rag_test_db
 ```
+
+`SESSION_BACKEND=auto` uses PostgreSQL for users, chats, and message history when
+`CONN_STR` is reachable. If PostgreSQL is unavailable, the app falls back to JSON
+files under `storage\sessions` so the UI and API still work.
 
 ## Build Local Index
 
