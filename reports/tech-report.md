@@ -337,6 +337,7 @@ python .\scripts\build_index.py
 - دعم streaming response.
 - استخدام fallback لو Gemini غير مضبوط.
 
+
 لو `GOOGLE_API_KEY` غير موجود:
 - لا يتوقف التطبيق.
 - يعطي رد fallback يقول إن Gemini غير configured.
