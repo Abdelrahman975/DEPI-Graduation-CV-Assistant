@@ -1,9 +1,9 @@
 **Technical Report: CV Assistant RAG**
 
 **1. فكرة المشروع**
-المشروع هو Web Application محلي يساعد المستخدم في تحليل وتحسين الـ CV. المستخدم يرفع السيرة الذاتية، والنظام يقرأها، يقيمها بأسلوب قريب من ATS، يقارنها بالوظائف الموجودة في الداتا المحلية، يقترح تحسينات، ثم يسمح للمستخدم بالدردشة مع مساعد ذكي عن الـ CV والوظائف والانترفيو.
+المشروع هو Web Application محلي يساعد المستخدم في تحليل وتحسين الـ CV. المستخدم يرفع السيرة الذاتية، والنظام يقرأها، يحللها، ويقدم اقتراحات.
 
-المشروع مبني كـ RAG system بسيط: يعني قبل ما الموديل يرد، النظام يبحث في داتا محلية مثل الوظائف وأسئلة الانترفيو، ثم يرسل السياق المناسب للموديل عشان الإجابة تكون مبنية على بيانات المشروع وليس مجرد رد عام.
+المشروع مبني كـ RAG system بسيط: يعني قبل ما الموديل يرد، النظام يبحث في داتا محلية مثل الوظائف وأسئلة الانترفيو، ثم يعطي الموديل السياق فيساعده يرد بشكل أدق.
 
 **2. الفئة المستهدفة**
 الفئة الأساسية:
@@ -23,10 +23,6 @@
 - المستخدم يحتاج شات يتابع معه نفس المحادثة ويفهم الـ CV المرفوع.
 
 **4. بنية المشروع**
-المشروع موجود في:
-
-[g_project_cv_g](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g>)
-
 البنية الأساسية:
 
 ```text
@@ -45,18 +41,13 @@ g_project_cv_g
 ```
 
 أهم الملفات:
-- [main.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/main.py>): نقطة تشغيل FastAPI وربط الـ routes.
-- [config/settings.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/config/settings.py>): إعدادات المشروع، مسارات الداتا، Gemini, Chroma, storage.
-- [dto/schemas.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/dto/schemas.py>): تعريف شكل الـ request والـ response.
-- [static/index.html](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/static/index.html>): واجهة المستخدم.
-- [scripts/build_index.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/scripts/build_index.py>): بناء فهرس Chroma من الداتا المحلية.
+- [main.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/main.py): نقطة تشغيل FastAPI وربط الـ routes.
+- [config/settings.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/config/settings.py): إعدادات المشروع، مسارات الداتا، Gemini, Chroma, storage.
+- [dto/schemas.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/dto/schemas.py): تعريف شكل الـ request والـ response.
+- [static/index.html](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/static/index.html): واجهة المستخدم.
+- [scripts/build_index.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/scripts/build_index.py): بناء فهرس Chroma من الداتا المحلية.
 
 **5. الداتا المستخدمة**
-الداتا داخل:
-
-```text
-g_project_cv_g/data
-```
 
 النسخة الحالية تستخدم ملفين أساسيين:
 - `data/clean_jobs.csv`: داتا الوظائف، وتشمل title, company, location, link, source, date, description.
@@ -72,7 +63,7 @@ g_project_cv_g/data
 - تزويد Gemini بسياق يساعده يولد أسئلة Interview مخصصة.
 
 **6. طبقة الإعدادات**
-في [config/settings.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/config/settings.py>) يتم تعريف:
+في [config/settings.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/config/settings.py) يتم تعريف:
 - `GOOGLE_API_KEY`: مفتاح Gemini.
 - `GEMINI_MODEL`: الموديل، حاليًا `gemini-2.5-flash-lite`.
 - `EMBEDDING_MODEL`: موديل embeddings.
@@ -84,7 +75,7 @@ g_project_cv_g/data
 - `SESSION_DIR`: مكان حفظ المحادثات لو PostgreSQL غير متاح.
 
 **7. نقطة تشغيل التطبيق**
-في [main.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/main.py>):
+في [main.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/main.py):
 - يتم إنشاء FastAPI app.
 - يتم تفعيل CORS.
 - يتم ربط routes:
@@ -96,7 +87,7 @@ g_project_cv_g/data
 - يوجد endpoint إعدادات عامة `/config`.
 
 **8. الواجهة Frontend**
-الواجهة في [static/index.html](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/static/index.html>).
+الواجهة في [static/index.html](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/static/index.html).
 
 وظيفتها:
 - إنشاء أو اختيار محادثة.
@@ -117,7 +108,7 @@ POST /api/v1/chat/stream
 **9. إدارة المستخدمين والمحادثات**
 الملف المسؤول:
 
-[routes/conversations.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/routes/conversations.py>)
+[routes/conversations.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/routes/conversations.py)
 
 Endpoints:
 - `POST /api/v1/users`: إنشاء أو جلب user.
@@ -128,22 +119,18 @@ Endpoints:
 
 التخزين يتم عن طريق:
 
-[core/session_store.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/session_store.py>)
+[core/session_store.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/session_store.py)
 
 لو PostgreSQL متاح:
 - يحفظ users و sessions في جداول PostgreSQL.
 
 لو PostgreSQL غير متاح:
-- يرجع تلقائيًا إلى JSON files داخل:
-
-```text
-storage/sessions
-```
+- يرجع تلقائيًا إلى JSON files داخل `storage/sessions`.
 
 **10. رفع وتحليل CV**
 الـ endpoint موجود في:
 
-[routes/cv.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/routes/cv.py>)
+[routes/cv.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/routes/cv.py)
 
 Endpoint:
 
@@ -158,7 +145,7 @@ POST /api/v1/cv/analyze
 
 بعدها يستدعي:
 
-[core/cv_analysis_service.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/cv_analysis_service.py>)
+[core/cv_analysis_service.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/cv_analysis_service.py)
 
 الخطوات:
 - التأكد من امتداد الملف.
@@ -173,7 +160,7 @@ POST /api/v1/cv/analyze
 **11. قراءة ملفات CV**
 المسؤول:
 
-[core/cv_parser.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/cv_parser.py>)
+[core/cv_parser.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/cv_parser.py)
 
 يدعم:
 - `.pdf`
@@ -200,7 +187,7 @@ POST /api/v1/cv/analyze
 **12. استخراج المهارات والكلمات المهمة**
 المسؤول:
 
-[core/text_utils.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/text_utils.py>)
+[core/text_utils.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/text_utils.py)
 
 يحتوي على:
 - قائمة `COMMON_SKILLS`.
@@ -217,7 +204,7 @@ POST /api/v1/cv/analyze
 **13. تقييم ATS**
 المسؤول:
 
-[core/ats_service.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/ats_service.py>)
+[core/ats_service.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/ats_service.py)
 
 التقييم لا يعتمد على رقم واحد فقط، بل على breakdown:
 - `job_alignment`: مدى تطابق الـ CV مع الوظائف المحلية.
@@ -242,7 +229,7 @@ POST /api/v1/cv/analyze
 **14. ترشيح الوظائف**
 المسؤول:
 
-[core/job_service.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/job_service.py>)
+[core/job_service.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/job_service.py)
 
 الخطوات:
 - يستدعي `vector_store.search_jobs`.
@@ -267,7 +254,7 @@ POST /api/v1/cv/analyze
 **15. فلترة الوظائف غير الصالحة**
 المسؤول:
 
-[core/job_filters.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/job_filters.py>)
+[core/job_filters.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/job_filters.py)
 
 هذا الملف يمنع ظهور وظائف بياناتها غير واضحة، مثل:
 - title بدون حروف.
@@ -284,7 +271,7 @@ is_masked_job(row)
 **16. Vector Store و RAG**
 المسؤول:
 
-[core/vector_store.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/vector_store.py>)
+[core/vector_store.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/vector_store.py)
 
 يستخدم Chroma محليًا.
 
@@ -309,7 +296,7 @@ Collections الحالية:
 **17. بناء الفهرس**
 المسؤول:
 
-[scripts/build_index.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/scripts/build_index.py>)
+[scripts/build_index.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/scripts/build_index.py)
 
 عند تشغيل:
 
@@ -327,7 +314,7 @@ python .\scripts\build_index.py
 **18. Gemini Service**
 المسؤول:
 
-[core/chat_service/gemini_service.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/chat_service/gemini_service.py>)
+[core/chat_service/gemini_service.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/chat_service/gemini_service.py)
 
 وظائفه:
 - الاتصال بـ Google Gemini.
@@ -346,7 +333,7 @@ python .\scripts\build_index.py
 **19. Prompt الأساسي**
 المسؤول:
 
-[prompts/cv_assistant.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/prompts/cv_assistant.py>)
+[prompts/cv_assistant.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/prompts/cv_assistant.py)
 
 يحدد شخصية وتعليمات المساعد:
 - يرد بشكل عملي.
@@ -358,7 +345,7 @@ python .\scripts\build_index.py
 **20. Chat Streaming**
 المسؤول:
 
-[routes/chat.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/routes/chat.py>)
+[routes/chat.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/routes/chat.py)
 
 Endpoint:
 
@@ -378,7 +365,7 @@ POST /api/v1/chat/stream
 
 الخدمة التي تنفذ المنطق:
 
-[core/chat_service/streaming_chat_service.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/chat_service/streaming_chat_service.py>)
+[core/chat_service/streaming_chat_service.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/chat_service/streaming_chat_service.py)
 
 **21. ماذا يحدث عندما المستخدم يرسل رسالة؟**
 التتبع خطوة بخطوة:
@@ -388,7 +375,7 @@ POST /api/v1/chat/stream
    ```text
    POST /api/v1/chat/stream
    ```
-3. الطلب يصل إلى [routes/chat.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/routes/chat.py>).
+3. الطلب يصل إلى [routes/chat.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/routes/chat.py).
 4. route يتحقق أن `session_id` موجود عن طريق `session_store.require`.
 5. لو المستخدم أرفق CV مع الرسالة، يتم قراءة الملف.
 6. route يرجع `StreamingResponse` من `streaming_chat_service.stream_chat`.
@@ -458,7 +445,7 @@ POST /api/v1/chat/stream
 **26. الأمان والتنظيف**
 المسؤول:
 
-[core/safety.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/core/safety.py>)
+[core/safety.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/core/safety.py)
 
 يحتوي على:
 - `safe_identifier`: تنظيف user_id و session_id.
@@ -472,7 +459,7 @@ POST /api/v1/chat/stream
 **27. Logging**
 المسؤول:
 
-[logging_config.py](</E:/DEPI-study/DEPI-graduation-project/g_project_cv_g/logging_config.py>)
+[logging_config.py](https://github.com/Abdelrahman975/DEPI-Graduation-CV-Assistant/blob/main/logging_config.py)
 
 يقوم بـ:
 - إنشاء log file داخل `storage/logs/app.log`.
