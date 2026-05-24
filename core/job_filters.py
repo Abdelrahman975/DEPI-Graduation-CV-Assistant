@@ -38,4 +38,4 @@ def _has_letters(value: str) -> bool:
 
 
 def _to_text(value: object) -> str:
-    return str(value or "").strip()
+    return str(value or "").strip() 
