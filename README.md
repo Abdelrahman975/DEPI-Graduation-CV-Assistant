@@ -8,9 +8,6 @@ The project reads local files from:
 
 - `data\clean_jobs.csv`
 - `data\new\coding_interview_question_bank.csv`
-- `data\resume-ats-score-v1-en\train.csv`
-- `data\resume-ats-score-v1-en\validation.csv`
-- `data\new\AI_Resume_Screening.csv`
 
 ## Setup
 
@@ -66,8 +63,4 @@ Open:
 - `GET /api/v1/chats/{session_id}`
 - `DELETE /api/v1/chats/{session_id}`
 - `POST /api/v1/cv/analyze`
-- `POST /api/v1/chat/message`
 - `POST /api/v1/chat/stream`
-- `GET /api/v1/jobs/recommendations/{session_id}`
-- `POST /api/v1/interview/questions`
-- `POST /api/v1/index/rebuild`

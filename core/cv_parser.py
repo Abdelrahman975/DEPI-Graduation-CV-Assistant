@@ -1,7 +1,6 @@
 import subprocess
 import tempfile
 from pathlib import Path
-from importlib import util
 from typing import Dict, List
 
 from core.text_utils import (
@@ -77,7 +76,7 @@ class CVParser:
         except Exception as exc:
             errors.append(f"pypdf: {exc}")
 
-        ocr_text = self._parse_pdf_with_optional_ocr(file_path)
+        ocr_text = self._parse_pdf_with_windows_ocr(file_path)
         if ocr_text.strip():
             return ocr_text
 
@@ -85,40 +84,6 @@ class CVParser:
             "لم أستطع قراءة نص من ملف PDF. غالباً الملف ممسوح ضوئياً أو عبارة عن صور. "
             "ارفع نسخة نصية من الـ PDF أو ملف DOCX/TXT، أو تأكد أن OCR متاح على الجهاز."
         )
-
-    def _parse_pdf_with_optional_ocr(self, file_path: Path) -> str:
-        texts = self._parse_pdf_with_windows_ocr(file_path)
-        if texts.strip():
-            return texts
-
-        if not util.find_spec("pytesseract") or not util.find_spec("PIL"):
-            return ""
-
-        try:
-            import fitz
-            import pytesseract
-            from PIL import Image
-        except Exception:
-            return ""
-
-        texts: List[str] = []
-        try:
-            document = fitz.open(file_path)
-            try:
-                for page in document:
-                    pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
-                    image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
-                    try:
-                        text = pytesseract.image_to_string(image, lang="eng+ara")
-                    except Exception:
-                        text = pytesseract.image_to_string(image, lang="eng")
-                    if text.strip():
-                        texts.append(text)
-            finally:
-                document.close()
-        except Exception:
-            return ""
-        return "\n".join(texts)
 
     def _parse_pdf_with_windows_ocr(self, file_path: Path) -> str:
         try:
